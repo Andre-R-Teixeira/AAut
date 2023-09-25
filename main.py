@@ -4,6 +4,9 @@ import itertools
 import numpy as np 
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import Ridge
+
+
 
 
 ## Load train data set
@@ -26,9 +29,11 @@ def main():
     count = 0
     T_r2 = 0
     error = 0
+    Alpha= 10000000
     
-    best_r = 0
-    best_train = []
+    
+    #best_r = 0
+    #best_train = []
     for i  in elements:
         permutations = calculate_permutations(15, i)
 
@@ -41,20 +46,25 @@ def main():
             y_train_set_cpy = np.delete(y_train_set, rows_to_cpy, axis=0)
             x_train_set_cpy = np.delete(x_train_set, rows_to_cpy, axis=0)
 
-            poly_features = PolynomialFeatures(degree=6, include_bias=False)
-            x_train_poly = poly_features.fit_transform(x_train_set_cpy)
-            x_test_poly = poly_features.transform(x_testing_set)
+            #poly_features = PolynomialFeatures(degree=6, include_bias=False)
+            #x_train_poly = poly_features.fit_transform(x_train_set_cpy)
+            #x_test_poly = poly_features.transform(x_testing_set)
         
             model = LinearRegression() 
+
+    
+            ridge_model = Ridge(alpha=Alpha)
+            ridge_model.fit(x_train_set_cpy, y_train_set_cpy)
             
             #model.fit(x_train_set_cpy, y_train_set_cpy)
-            model.fit(x_train_poly, y_train_set_cpy)
+            #model.fit(x_train_poly, y_train_set_cpy)
             
             #r_sq = model.score(x_train_set_cpy, y_train_set_cpy)
 
             # Test prediction with the part of the training set
             #y_pred = model.predict(x_testing_set)
-            y_pred = model.predict(x_test_poly)
+            #y_pred = model.predict(x_test_poly)
+            y_pred = ridge_model.predict(x_testing_set)
             
             # Calculate Sum of square errors
             # print(f"\nRow removed to test {rows_to_cpy}")
@@ -86,6 +96,7 @@ def main():
         #print(f"Best train: {best_train} Best abs diff: {best_abs_diff} Best R2: {best_r}")
     
     error = T_r2/count
+    print(f" Alpha: {Alpha}\n")
     print(f" Sum of Error: {error}")
 # Itera
 
