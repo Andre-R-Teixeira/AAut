@@ -5,8 +5,7 @@ import numpy as np
 from sklearn.linear_model import LinearRegression
 from sklearn.preprocessing import PolynomialFeatures
 from sklearn.linear_model import Ridge
-
-
+from sklearn.linear_model import Lasso
 
 
 ## Load train data set
@@ -29,7 +28,7 @@ def main():
     count = 0
     T_r2 = 0
     error = 0
-    Alpha= 10000000
+    Alpha= 10000
     
     
     #best_r = 0
@@ -50,11 +49,14 @@ def main():
             #x_train_poly = poly_features.fit_transform(x_train_set_cpy)
             #x_test_poly = poly_features.transform(x_testing_set)
         
-            model = LinearRegression() 
+            #model = LinearRegression() 
 
     
-            ridge_model = Ridge(alpha=Alpha)
-            ridge_model.fit(x_train_set_cpy, y_train_set_cpy)
+            #ridge_model = Ridge(alpha=Alpha)
+            #ridge_model.fit(x_train_set_cpy, y_train_set_cpy)
+
+            lasso_model = Lasso(alpha=Alpha)
+            lasso_model.fit(x_train_set_cpy, y_train_set_cpy)
             
             #model.fit(x_train_set_cpy, y_train_set_cpy)
             #model.fit(x_train_poly, y_train_set_cpy)
@@ -64,7 +66,8 @@ def main():
             # Test prediction with the part of the training set
             #y_pred = model.predict(x_testing_set)
             #y_pred = model.predict(x_test_poly)
-            y_pred = ridge_model.predict(x_testing_set)
+            #y_pred = ridge_model.predict(x_testing_set)
+            y_pred = lasso_model.predict(x_testing_set)
             
             # Calculate Sum of square errors
             # print(f"\nRow removed to test {rows_to_cpy}")
