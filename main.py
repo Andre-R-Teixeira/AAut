@@ -22,7 +22,10 @@ def main():
     x_train_set, y_train_set = load_train_data(files_folder+'X_train_regression1.npy', files_folder+'y_train_regression1.npy')
 
     elements =  list(range(1, 14))
-    best_abs_diff = 1000
+    #best_abs_diff = 1000
+    count = 0
+    T_r2 = 0
+    error = 0
     
     best_r = 0
     best_train = []
@@ -37,14 +40,21 @@ def main():
 
             y_train_set_cpy = np.delete(y_train_set, rows_to_cpy, axis=0)
             x_train_set_cpy = np.delete(x_train_set, rows_to_cpy, axis=0)
+
+            poly_features = PolynomialFeatures(degree=6, include_bias=False)
+            x_train_poly = poly_features.fit_transform(x_train_set_cpy)
+            x_test_poly = poly_features.transform(x_testing_set)
         
             model = LinearRegression() 
             
-            model.fit(x_train_set_cpy, y_train_set_cpy)
-            r_sq = model.score(x_train_set_cpy, y_train_set_cpy)
+            #model.fit(x_train_set_cpy, y_train_set_cpy)
+            model.fit(x_train_poly, y_train_set_cpy)
+            
+            #r_sq = model.score(x_train_set_cpy, y_train_set_cpy)
 
             # Test prediction with the part of the training set
-            y_pred = model.predict(x_testing_set)
+            #y_pred = model.predict(x_testing_set)
+            y_pred = model.predict(x_test_poly)
             
             # Calculate Sum of square errors
             # print(f"\nRow removed to test {rows_to_cpy}")
@@ -59,18 +69,24 @@ def main():
             
             # Calculate R2
             R2 = 1 - (SSE/SST)
+
+            count = count + 1
+
+            T_r2 = T_r2 + R2
             
             #print(f"R2 calculate {R2}")
             # print(f"R^2 : {R2}")
             
-            abs_diff = abs(1 - R2)
-            if (abs_diff < best_abs_diff):
-                best_abs_diff = abs_diff
-                best_train = rows_to_cpy
-                best_r = R2
+            #abs_diff = abs(1 - R2)
+            #if (abs_diff < best_abs_diff):
+                #best_abs_diff = abs_diff
+                #best_train = rows_to_cpy
+                #best_r = R2
 
-        print(f"Best train: {best_train} Best abs diff: {best_abs_diff} Best R2: {best_r}")
+        #print(f"Best train: {best_train} Best abs diff: {best_abs_diff} Best R2: {best_r}")
     
+    error = T_r2/count
+    print(f" Sum of Error: {error}")
 # Itera
 
 if __name__ == '__main__':
