@@ -6,62 +6,203 @@ from sklearn.linear_model import LinearRegression
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import r2_score
 from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import Ridge
-from sklearn.linear_model import Lasso
+from sklearn.linear_model import Ridge, RidgeCV
+from sklearn.linear_model import Lasso, LassoCV
 
+class PlotManager:
+    def __init__(selg)
+    
+    
+# The `Regression_Model_Tester` class is used to test a regression model by performing
+# cross-validation and calculating the mean error of the model.
+class Regression_Model_Tester:
+    def __init__ (self, X, Y, used_model, used_model_name ):
+        """
+        The above function is a constructor that initializes the attributes of an object, including the
+        input data, the used model, and the model name, as well as empty lists for predicted values, real
+        values, and prediction errors.
+        
+        :param X: The X parameter represents the input data for the model. It could be a matrix or an array
+        containing the features or independent variables used for prediction
+        :param Y: The Y parameter represents the target variable or the dependent variable in a machine
+        learning model. It is the variable that we are trying to predict or estimate based on the input
+        variables X
+        :param used_model: The `used_model` parameter is the machine learning model that will be used for
+        prediction. It could be any model such as linear regression, decision tree, random forest, etc. The
+        specific model will be passed as an argument when creating an instance of this class
+        :param used_model_name: The name of the machine learning model that is being used
+        """
+        self.X = X
+        self.Y = Y
+        self.used_model = used_model
+        self.used_model_name = used_model_name
+        
+        self.y_pred = []
+        self.y_real = []
+        self.prediction_error = []
+        
 
-## Load train data set
-def load_train_data(x_train_set_filename, y_train_set_filename): 
-    return np.load(x_train_set_filename), np.load(y_train_set_filename)
+    @property
+    def errors(self) ->  np.array:
+        """
+        The function calculates the error of the model by taking the mean of the prediction error.
+        :return: the mean of the `prediction_error` array.
+        """
+        
+        return np.mean(self.prediction_error)
+        
+    def cross_validation (self) -> None: 
+        """
+        The `cross_validation` function performs cross-validation by splitting the data into training and
+        testing sets, fitting the model on the training set, and evaluating the model's performance on the
+        testing set.
+        :return: None.
+        """
+        
+        for i in range (len(self.X)):            
+            x_copy= np.copy(self.X)
+            y_copy = np.copy(self.Y)
 
-def calculate_permutations(list_size, size_of_combination):
-    # Define size of the list for permutations   
-    elements = list(range(list_size))
+            x_train_set_cpy = np.delete(x_copy, i, axis=0)
+            y_train_set_cpy = np.delete(y_copy, i, axis=0)
+            
+            x_test  = self.X[i : i+1]
+            y_test = self.Y[i : i+1] 
+                
+            self.used_model.fit(x_train_set_cpy, y_train_set_cpy)
+                    
+            # Test prediction with the part of the training set
+            y_pred = self.used_model.predict(x_test)
+            
+            self.y_pred.append(y_pred)
+            self.y_real.append(y_test)
 
-    # Generate all the permutations of 3 elements from the list and store them in a NumPy array
-    return np.array(list(itertools.combinations(elements, size_of_combination)))
+            SE = mean_squared_error(y_test, y_pred)
+            self.prediction_error.append(SE)
+
+        return None
+    
+    def run_validation (self) -> None: 
+        """
+        The function "run_validation" performs cross-validation and prints the mean error.
+        :return: None.
+        """
+        self.cross_validation()
+        print(f"Calculating mean of error for {self.used_model_name} : {self.errors}")
+        return None
+        
+
+def polynomial_model(X_train, Y_train) -> None:
+    """
+    The `polynomial_model` function creates a polynomial regression model by transforming the input data
+    into a polynomial form and then fitting the model on the transformed data.
+    :param X_train: The X_train parameter represents the input data for the model. It could be a matrix or
+    an array containing the features or independent variables used for prediction
+    :param Y_train: The Y_train parameter represents the target variable or the dependent variable in a
+    machine learning model. It is the variable that we are trying to predict or estimate based on the input
+    variables X
+    :return: None.
+    """
+    
+    polynomial_features = PolynomialFeatures(degree = 2)
+    x_poly = polynomial_features.fit_transform(X_train)
+    
+    polynomial_regression_model = Regression_Model_Tester (
+        x_poly, 
+        Y_train, 
+        LinearRegression(), 
+        "Polynomial Regression"
+    )
+    polynomial_regression_model.run_validation()
+    
+    return None
+
+def linear_model(X_train, Y_train) -> None: 
+    """
+    The function `linear_model` trains and tests a linear regression model using the given training
+    data.
+    
+    :param X_train: The X_train parameter is the training data for the independent variables in your
+    linear regression model. It should be a 2-dimensional array or dataframe where each row represents a
+    sample and each column represents a feature
+    :param Y_train: The parameter Y_train represents the target variable or the dependent variable in
+    your dataset. It is the variable that you are trying to predict or model using the independent
+    variables (X_train)
+    :return: None.
+    """
+    
+    linear_regression_model = Regression_Model_Tester (
+        X_train, 
+        Y_train, 
+        LinearRegression(), 
+        "Linear Regression"
+    )
+    linear_regression_model.run_validation()
+    
+    return None
+    
+def ridge_model(X_train, Y_train) -> None:
+    """
+    The function `ridge_model` performs ridge regression on the given training data and prints the
+    validation results.
+    
+    :param X_train: The X_train parameter is the training data for the independent variables. It should
+    be a matrix or dataframe with shape (n_samples, n_features), where n_samples is the number of
+    samples or observations and n_features is the number of independent variables or features
+    :param Y_train: The parameter Y_train represents the target variable or the dependent variable in
+    your training dataset. It is the variable that you are trying to predict or model using the
+    independent variables (X_train)
+    :return: None.
+    """
+    ridge_regression_model = Regression_Model_Tester (
+        X_train, 
+        Y_train, 
+        Ridge(alpha = 0.01), 
+        "Ridge Regression"
+    )
+    ridge_regression_model.run_validation()
+    
+    return None
+    
+def lasso_model(X_train, Y_train) -> None:
+    """
+    The function `lasso_model` trains and tests a Lasso regression model using the provided training
+    data.
+    
+    :param X_train: The parameter X_train is the training data for the independent variables. It should
+    be a matrix or dataframe with shape (n_samples, n_features), where n_samples is the number of
+    samples or observations and n_features is the number of independent variables or features
+    :param Y_train: The parameter Y_train represents the target variable or the dependent variable in
+    your dataset. It is the variable that you are trying to predict or model using the independent
+    variables (X_train)
+    :return: None.
+    """
+    lasso_regression_model = Regression_Model_Tester (
+        X_train, 
+        Y_train, 
+        Lasso(), 
+        "Lasso Regression"
+    )
+    lasso_regression_model.run_validation()
+    
+    return None
+
 
 def main(): 
-    files_folder = 'input_files/1_exercise/' 
-    x_train_set, y_train_set = load_train_data(files_folder+'X_train_regression1.npy', files_folder+'y_train_regression1.npy')
-
-    T_r2 = 0
-    error = 0
+    """
+    The main function loads training data and calls three different models: linear_model, ridge_model,
+    and lasso_model.
+    """
     
+    x_train_set = np.load ('input_files/1_exercise/X_train_regression1.npy')
+    y_train_set = np.load ('input_files/1_exercise/y_train_regression1.npy')
     
-    #poly = PolynomialFeatures(degree=1)
-   
-    #x_train_set = poly.fit_transform(x_train_set)
+    linear_model(x_train_set, y_train_set)
 
-    for i in range(15):
-            
-        x_copy= np.copy(x_train_set)
-        y_copy = np.copy(y_train_set)
-
-        x_train_set_cpy = np.delete(x_copy, i, axis=0)
-        y_train_set_cpy = np.delete(y_copy, i, axis=0)
-
-        x_test  = x_train_set[i : i+1]
-        y_test = y_train_set[i : i+1] 
-
-        #model = Lasso(alpha= )
-        #model = Ridge(alpha= )
-        model = LinearRegression() 
-        model.fit(x_train_set_cpy, y_train_set_cpy)
-
-        
-        # Test prediction with the part of the training set
-        y_pred = model.predict(x_test)
-
-        SE = mean_squared_error(y_test, y_pred)
-            
-
-        T_r2 = T_r2 + SE
-            
+    ridge_model(x_train_set, y_train_set)
     
-    error = T_r2/15
-    #print(f" Alpha: {Alpha}\n")
-    print(f" Mean of Error: {error}")
+    lasso_model(x_train_set, y_train_set)
 
 if __name__ == '__main__':
     main()
+    
