@@ -10,7 +10,8 @@ from sklearn.linear_model import Ridge, RidgeCV
 from sklearn.linear_model import Lasso, LassoCV
 
 class PlotManager:
-    def __init__(selg)
+    def __init__(self):
+        pass
     
     
 # The `Regression_Model_Tester` class is used to test a regression model by performing
@@ -51,7 +52,7 @@ class Regression_Model_Tester:
         
         return np.mean(self.prediction_error)
         
-    def cross_validation (self) -> None: 
+    def __cross_validation (self) -> None: 
         """
         The `cross_validation` function performs cross-validation by splitting the data into training and
         testing sets, fitting the model on the training set, and evaluating the model's performance on the
@@ -60,11 +61,9 @@ class Regression_Model_Tester:
         """
         
         for i in range (len(self.X)):            
-            x_copy= np.copy(self.X)
-            y_copy = np.copy(self.Y)
 
-            x_train_set_cpy = np.delete(x_copy, i, axis=0)
-            y_train_set_cpy = np.delete(y_copy, i, axis=0)
+            x_train_set_cpy = np.delete(np.copy(self.X), i, axis=0)
+            y_train_set_cpy = np.delete(np.copy(self.Y), i, axis=0)
             
             x_test  = self.X[i : i+1]
             y_test = self.Y[i : i+1] 
@@ -87,7 +86,7 @@ class Regression_Model_Tester:
         The function "run_validation" performs cross-validation and prints the mean error.
         :return: None.
         """
-        self.cross_validation()
+        self.__cross_validation()
         print(f"Calculating mean of error for {self.used_model_name} : {self.errors}")
         return None
         
@@ -157,7 +156,7 @@ def ridge_model(X_train, Y_train) -> None:
     ridge_regression_model = Regression_Model_Tester (
         X_train, 
         Y_train, 
-        Ridge(alpha = 0.01), 
+        Ridge(alpha = .9), 
         "Ridge Regression"
     )
     ridge_regression_model.run_validation()
