@@ -1,23 +1,63 @@
 import itertools
 
-
 import numpy as np 
-from sklearn.linear_model import LinearRegression
-from sklearn.metrics import mean_squared_error
-from sklearn.metrics import r2_score
-from sklearn.preprocessing import PolynomialFeatures
-from sklearn.linear_model import Ridge, RidgeCV
-from sklearn.linear_model import Lasso, LassoCV
 
+import matplotlib.pyplot as plt
+
+from sklearn.metrics import mean_squared_error
+from sklearn.preprocessing import PolynomialFeatures
+from sklearn.linear_model import LinearRegression, Ridge, Lasso, LassoCV, RidgeCV
+
+# The `PlotManager` class provides methods to initialize a plot, plot regression models, and display
+# the plot with a legend.
 class PlotManager:
     def __init__(self):
-        pass
+        """
+        The function initializes a plot with a title, x and y labels, and a grid, and plots a line with a
+        specific range and style.
+        """
+        x = np.linspace(-10, 10, 1000)
+
+        plt.title = 'Regression models comparison'        
+        plt.xlabel('Predicted values')
+        plt.ylabel('Real values')
+        
+        plt.plot(x, x, color='grey', linestyle='--', label='Y = x')
+        plt.ylim(-5, 5)
+        plt.xlim(-5, 5)
+        plt.grid(True)
+        
+    def plot_regression(self, y_real = [], y_pred = [], model_name = 'No model name', color = 'blue'):
+        """
+        The function `plot_regression` plots the real values (`y_real`) against the predicted values
+        (`y_pred`) using a scatter plot with a specified color and model name as labels.
+        
+        :param y_real: The actual values of the dependent variable (y) in the regression model
+        :param y_pred: The predicted values of the regression model
+        :param model_name: The model_name parameter is a string that represents the name of the regression
+        model being plotted. It is used as a label for the plot, defaults to No model name (optional)
+        :param color: The color parameter is used to specify the color of the plotted points. It can be any
+        valid color name or a hexadecimal color code, defaults to blue (optional)
+        """
+        plt.plot(y_real, y_pred, 'o', color=color, label=model_name)
+
+
+        for i in range(len(y_real)):
+        #    plt.plot([y_real[i], y_real[i]], [y_real[i], y_pred[i]], color=color, linestyle='--')
+            plt.text(y_real[i], y_pred[i], str(i), fontsize=10, color=color)
+        
+    def show(self):
+        """
+        The function displays a legend on a matplotlib plot and shows the plot.
+        """
+        plt.legend(loc='upper left')
+        plt.show() 
     
     
 # The `Regression_Model_Tester` class is used to test a regression model by performing
 # cross-validation and calculating the mean error of the model.
 class Regression_Model_Tester:
-    def __init__ (self, X, Y, used_model, used_model_name ):
+    def __init__ (self, X, Y, used_model, used_model_name, plot, color):
         """
         The above function is a constructor that initializes the attributes of an object, including the
         input data, the used model, and the model name, as well as empty lists for predicted values, real
@@ -41,6 +81,8 @@ class Regression_Model_Tester:
         self.y_pred = []
         self.y_real = []
         self.prediction_error = []
+        self.plot = plot
+        self.color = color
         
 
     @property
@@ -77,6 +119,7 @@ class Regression_Model_Tester:
             self.y_real.append(y_test)
 
             SE = mean_squared_error(y_test, y_pred)
+
             self.prediction_error.append(SE)
 
         return None
@@ -87,11 +130,24 @@ class Regression_Model_Tester:
         :return: None.
         """
         self.__cross_validation()
+        self.plot_model()
         print(f"Calculating mean of error for {self.used_model_name} : {self.errors}")
         return None
+
+        
+    def plot_model(self) -> None: 
+        """
+        The function `plot_model` plots the predicted values against the real values.
+        :return: None.
+        """
+        self.plot.plot_regression(np.array(self.y_real).reshape(-1), 
+                                  np.array(self.y_pred).reshape(-1), 
+                                  f"{self.used_model_name} : {self.errors}",
+                                  color = self.color)
+        return None 
         
 
-def polynomial_model(X_train, Y_train) -> None:
+def polynomial_model(X_train, Y_train, plot, color) -> None:
     """
     The `polynomial_model` function creates a polynomial regression model by transforming the input data
     into a polynomial form and then fitting the model on the transformed data.
@@ -103,20 +159,22 @@ def polynomial_model(X_train, Y_train) -> None:
     :return: None.
     """
     
-    polynomial_features = PolynomialFeatures(degree = 2)
+    polynomial_features = PolynomialFeatures(degree = 2, include_bias=True)
     x_poly = polynomial_features.fit_transform(X_train)
     
     polynomial_regression_model = Regression_Model_Tester (
         x_poly, 
         Y_train, 
         LinearRegression(), 
-        "Polynomial Regression"
+        "Polynomial Regression",
+        plot,
+        color
     )
     polynomial_regression_model.run_validation()
     
     return None
 
-def linear_model(X_train, Y_train) -> None: 
+def linear_model(X_train, Y_train, plot, color  ) -> None: 
     """
     The function `linear_model` trains and tests a linear regression model using the given training
     data.
@@ -134,13 +192,15 @@ def linear_model(X_train, Y_train) -> None:
         X_train, 
         Y_train, 
         LinearRegression(), 
-        "Linear Regression"
+        "Linear Regression",
+        plot,
+        color
     )
     linear_regression_model.run_validation()
     
     return None
     
-def ridge_model(X_train, Y_train) -> None:
+def ridge_model(X_train, Y_train, plot, color) -> None:
     """
     The function `ridge_model` performs ridge regression on the given training data and prints the
     validation results.
@@ -156,14 +216,16 @@ def ridge_model(X_train, Y_train) -> None:
     ridge_regression_model = Regression_Model_Tester (
         X_train, 
         Y_train, 
-        Ridge(alpha = .9), 
-        "Ridge Regression"
+        Ridge(alpha = 2.4), 
+        "Ridge Regression", 
+        plot, 
+        color
     )
     ridge_regression_model.run_validation()
     
     return None
     
-def lasso_model(X_train, Y_train) -> None:
+def lasso_model(X_train, Y_train, plot, color) -> None:
     """
     The function `lasso_model` trains and tests a Lasso regression model using the provided training
     data.
@@ -179,8 +241,10 @@ def lasso_model(X_train, Y_train) -> None:
     lasso_regression_model = Regression_Model_Tester (
         X_train, 
         Y_train, 
-        Lasso(), 
-        "Lasso Regression"
+        Lasso(alpha = 0.09), 
+        "Lasso Regression", 
+        plot, 
+        color 
     )
     lasso_regression_model.run_validation()
     
@@ -193,14 +257,21 @@ def main():
     and lasso_model.
     """
     
+    plot =  PlotManager()
+ 
     x_train_set = np.load ('input_files/1_exercise/X_train_regression1.npy')
     y_train_set = np.load ('input_files/1_exercise/y_train_regression1.npy')
     
-    linear_model(x_train_set, y_train_set)
+    linear_model(x_train_set, y_train_set, plot, 'blue')
 
-    ridge_model(x_train_set, y_train_set)
+    ridge_model(x_train_set, y_train_set, plot, 'green')
     
-    lasso_model(x_train_set, y_train_set)
+    lasso_model(x_train_set, y_train_set, plot, 'red')
+ 
+    polynomial_model(x_train_set, y_train_set, plot, 'cyan')    
+
+
+    plot.show()
 
 if __name__ == '__main__':
     main()
