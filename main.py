@@ -27,41 +27,49 @@ def main():
 
     T_r2 = 0
     error = 0
+    Best_error = 1000
     
     
     #poly = PolynomialFeatures(degree=1)
    
     #x_train_set = poly.fit_transform(x_train_set)
+    for Alpha in np.arange(0.01, 40.1, 0.01):
 
-    for i in range(15):
+        T_r2 = 0 
+        for i in range(15):
             
-        x_copy= np.copy(x_train_set)
-        y_copy = np.copy(y_train_set)
+            x_copy= np.copy(x_train_set)
+            y_copy = np.copy(y_train_set)
 
-        x_train_set_cpy = np.delete(x_copy, i, axis=0)
-        y_train_set_cpy = np.delete(y_copy, i, axis=0)
+            x_train_set_cpy = np.delete(x_copy, i, axis=0)
+            y_train_set_cpy = np.delete(y_copy, i, axis=0)
 
-        x_test  = x_train_set[i : i+1]
-        y_test = y_train_set[i : i+1] 
+            x_test  = x_train_set[i : i+1]
+            y_test = y_train_set[i : i+1] 
 
-        #model = Lasso(alpha= )
-        #model = Ridge(alpha= )
-        model = LinearRegression() 
-        model.fit(x_train_set_cpy, y_train_set_cpy)
+            #model = Lasso(alpha=Alpha)
+            model = Ridge(alpha=Alpha)
+            #model = LinearRegression() 
+            model.fit(x_train_set_cpy, y_train_set_cpy)
 
         
-        # Test prediction with the part of the training set
-        y_pred = model.predict(x_test)
+            # Test prediction with the part of the training set
+            y_pred = model.predict(x_test)
 
-        SE = mean_squared_error(y_test, y_pred)
+            SE = mean_squared_error(y_test, y_pred)
             
 
-        T_r2 = T_r2 + SE
+            T_r2 = T_r2 + SE
+
             
-    
-    error = T_r2/15
-    #print(f" Alpha: {Alpha}\n")
-    print(f" Mean of Error: {error}")
+            
+        error = T_r2/15
+        if error < Best_error:
+            Best_error = error
+            Best_Alpha = Alpha
+
+            print(f" Alpha: {Best_Alpha}\n")
+            print(f" Mean of Error: {Best_error}")
 
 if __name__ == '__main__':
     main()
