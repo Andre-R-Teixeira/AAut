@@ -30,13 +30,15 @@ def main():
     Best_error = 1000
     
     
-    #poly = PolynomialFeatures(degree=1)
-   
-    #x_train_set = poly.fit_transform(x_train_set)
-    for Alpha in np.arange(0.01, 40.1, 0.01):
+    
+    for Degree in np.arange(1, 4, 1):
+    #for Alpha in np.arange(0.01, 10, 0.01):
+
+        poly = PolynomialFeatures(degree=Degree)
+        x_train_set = poly.fit_transform(x_train_set)
 
         T_r2 = 0 
-        for i in range(15):
+        for i in range(14):
             
             x_copy= np.copy(x_train_set)
             y_copy = np.copy(y_train_set)
@@ -48,8 +50,8 @@ def main():
             y_test = y_train_set[i : i+1] 
 
             #model = Lasso(alpha=Alpha)
-            model = Ridge(alpha=Alpha)
-            #model = LinearRegression() 
+            #model = Ridge(alpha=Alpha)
+            model = LinearRegression() 
             model.fit(x_train_set_cpy, y_train_set_cpy)
 
         
@@ -66,9 +68,11 @@ def main():
         error = T_r2/15
         if error < Best_error:
             Best_error = error
-            Best_Alpha = Alpha
+            #Best_alpha = Alpha
+            Best_degree = Degree
 
-            print(f" Alpha: {Best_Alpha}\n")
+            #print(f" Alpha: {Best_alpha}\n")
+            print(f" Degree: {Best_degree}\n")
             print(f" Mean of Error: {Best_error}")
 
 if __name__ == '__main__':
