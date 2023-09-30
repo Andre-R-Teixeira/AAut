@@ -28,52 +28,62 @@ def main():
     T_r2 = 0
     error = 0
     Best_error = 1000
-    
-    
-    
-    for Degree in np.arange(1, 4, 1):
-    #for Alpha in np.arange(0.01, 10, 0.01):
 
-        poly = PolynomialFeatures(degree=Degree)
-        x_train_set = poly.fit_transform(x_train_set)
+    
+    for j in range(1): 
+        x_copy1= np.copy(x_train_set)
+    
 
-        T_r2 = 0 
-        for i in range(14):
+        x_train_set_cpy1 = np.delete(x_copy1, [4, 3, 2, 0], axis=1)
+    
+
+    
+    
+        #for Degree in np.arange(1, 2, 1):
+        for Alpha in np.arange(0.01, 30, 0.01):
+
+            #poly = PolynomialFeatures(degree=Degree)
+            #x_train_set = poly.fit_transform(x_train_set_cpy1)
+
+            T_r2 = 0 
+            for i in range(15):
             
-            x_copy= np.copy(x_train_set)
-            y_copy = np.copy(y_train_set)
+                x_copy= np.copy(x_train_set_cpy1)
+                y_copy = np.copy(y_train_set)
 
-            x_train_set_cpy = np.delete(x_copy, i, axis=0)
-            y_train_set_cpy = np.delete(y_copy, i, axis=0)
+                x_train_set_cpy = np.delete(x_copy, i, axis=0)
+                y_train_set_cpy = np.delete(y_copy, i, axis=0)
 
-            x_test  = x_train_set[i : i+1]
-            y_test = y_train_set[i : i+1] 
 
-            #model = Lasso(alpha=Alpha)
-            #model = Ridge(alpha=Alpha)
-            model = LinearRegression() 
-            model.fit(x_train_set_cpy, y_train_set_cpy)
+                x_test  = x_train_set_cpy1[i : i+1]
+                y_test = y_train_set[i : i+1] 
+
+                #model = Lasso(alpha=Alpha)
+                model = Ridge(alpha=Alpha)
+                #model = LinearRegression() 
+                model.fit(x_train_set_cpy, y_train_set_cpy)
 
         
-            # Test prediction with the part of the training set
-            y_pred = model.predict(x_test)
+                # Test prediction with the part of the training set
+                y_pred = model.predict(x_test)
 
-            SE = mean_squared_error(y_test, y_pred)
+                SE = mean_squared_error(y_test, y_pred)
             
 
-            T_r2 = T_r2 + SE
+                T_r2 = T_r2 + SE
 
             
             
-        error = T_r2/15
-        if error < Best_error:
-            Best_error = error
-            #Best_alpha = Alpha
-            Best_degree = Degree
+            error = T_r2/15
+            if error < Best_error:
+                Best_error = error
+                Best_alpha = Alpha
+                #Best_degree = Degree
 
-            #print(f" Alpha: {Best_alpha}\n")
-            print(f" Degree: {Best_degree}\n")
-            print(f" Mean of Error: {Best_error}")
+                print(f" Alpha: {Best_alpha}\n")
+                #print(f" Degree: {Best_degree}\n")
+                print(f" Rows: [{j}, {j+4}, {j+5}]")
+                print(f" Mean of Error: {Best_error}")
 
 if __name__ == '__main__':
     main()
