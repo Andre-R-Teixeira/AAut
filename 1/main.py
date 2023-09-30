@@ -69,7 +69,7 @@ class PlotManager:
 # The `Regression_Model_Tester` class is used to test a regression model by performing
 # cross-validation and calculating the mean error of the model.
 class Regression_Model_Tester:
-    def __init__(self, X, Y, used_model, used_model_name, plot, color, remove_colums = False):
+    def __init__(self, X, Y, used_model, used_model_name, plot, color):
         """
         The above function is a constructor that initializes the attributes of an object, including the
         input data, the used model, and the model name, as well as empty lists for predicted values, real
@@ -96,13 +96,12 @@ class Regression_Model_Tester:
         self.plot = plot
         self.color = color
         
-        self._previous_best_error = sys.maxsize
-        self._previous_best_combination = []
-        
-        self.remove_colums =  remove_colums
-        
+        self.column_removed = []
+
+
+
     @property 
-    def best_error_removing_colums(self): 
+    def best_error_removing_column(self): 
         return self._previous_best_error, self._previous_best_combination
 
     @property
@@ -118,8 +117,21 @@ class Regression_Model_Tester:
     def errors_setter(self, errors): 
         self._previous_best_error = errors
 
-    def _train_model(self, X_set, Y_set, i):
-
+    def _train_model(self, X_set, Y_set, i ):
+        """
+        The `_train_model` function trains a model on a training set, makes predictions on a test set, and
+        calculates the mean squared error between the predicted and actual values.
+        
+        :param X_set: X_set is a numpy array containing the input features for the training data. Each row
+        of X_set represents a single training example, and each column represents a different feature
+        :param Y_set: Y_set is the set of target values or labels for the training data. It represents the
+        true values that the model is trying to predict
+        :param i: The parameter "i" represents the index of the data point that is being used as the test
+        set. It is used to split the data into training and testing sets by excluding the data point at
+        index "i" from the training set and using it as the test set
+        :return: the mean squared error between the predicted values (y_pred) and the actual values
+        (y_test).
+        """
         x_train_set_cpy = np.delete(np.copy(X_set), i, axis=0)
         y_train_set_cpy = np.delete(np.copy(Y_set), i, axis=0)
 
@@ -134,63 +146,79 @@ class Regression_Model_Tester:
         self.y_pred.append(y_pred)
         self.y_real.append(y_test)
 
-        return( mean_squared_error(y_test, y_pred))
-        
-        
-    def _cross_validation(self) -> None:
+        return(mean_squared_error(y_test, y_pred))
+
+
+    def _cross_validation_with_all_columns(self) -> None:                 
         """
-        The `cross_validation` function performs cross-validation by splitting the data into training and
-        testing sets, fitting the model on the training set, and evaluating the model's performance on the
-        testing set.
-        :return: None.
+        The function performs cross-validation by training a model on all columns of the input data and
+        calculating the prediction error for each iteration.
+        :return: None
         """
+        for i in range(len(self.X)):
+            SE  = self._train_model(np.copy(self.X), np.copy(self.Y), i)
 
-        max_4_combinations = []
-        
-        
-        
-        #print(f"len : len(self.X) {(np.shape(self.X)[1])}")
-        if self.remove_colums is not False:
-            for lenght  in range (1, 6): 
-                for combo in itertools.combinations(range(10), lenght - 1):
-                    max_4_combinations.append(combo)
-                
-                for j in max_4_combinations: 
-                    total_error = []
+            self.prediction_error.append(SE)
 
-                    x_train_set_removed_colums = np.delete(np.copy(self.X), j, axis=1)
-                    
-                    for i in range (len(self.X)):
-                        SE = self._train_model(x_train_set_removed_colums, np.copy(self.Y), i)
-        
-                        total_error.append(SE)
-                        
-                    #print(f"total erros  {np.mean(total_error)}")
-                        
-                    if (np.mean(total_error) < self._previous_best_error):
-                        self._previous_best_error = np.mean(total_error)
-                        self._previous_best_combination = j 
-                        self.prediction_error = total_error                        
-
-
-                        
-
-        else:
-            for i in range(len(self.X)):
-                SE  = self._train_model(np.copy(self.X), np.copy(self.Y), i)
-
-                self.prediction_error.append(SE)
-            
         return None
 
-    def run_validation(self) -> None:
+    def _cross_validation_removing_colums(self, number_of_column_to_remove = 1) ->  None:
         """
-        The function "run_validation" performs cross-validation and prints the mean error.
+        The function performs cross-validation by removing a specified number of columns from a dataset and
+        training a model on the modified dataset.
+        
+        :param number_of_column_to_remove: The parameter `number_of_column_to_remove` is an integer that
+        specifies the maximum number of columns to remove from the dataset. It determines the length of the
+        combinations of columns that will be generated. For example, if `number_of_column_to_remove` is set
+        to 2, the code will generate, defaults to 1 (optional)
         :return: None.
         """
-        self._cross_validation()
-        # self.plot_model()
-        print(f"Calculating mean of error for {self.used_model_name} : {self.errors} colums remove {self._previous_best_combination}")
+        
+        column_to_remove = []
+        see_vector = []
+
+        for length in range (1, number_of_column_to_remove + 1): 
+            for combo in itertools.combinations(range(10), length): 
+                column_to_remove.append(combo)
+
+        for i in column_to_remove:
+            x_set = np.delete(np.copy(self.X), i, axis=1)
+            
+            for  j in range (len(x_set)):
+                see_vector.append(self._train_model(x_set, np.copy(self.Y), j))
+
+            if np.mean(see_vector) < self.errors or np.isnan(self.errors): 
+                self.column_removed = i
+                self.prediction_error = see_vector
+
+            sse_vector = []
+
+        return None 
+        
+
+    def run_validation(self, number_of_column_to_remove = 0, plot_model =  False) -> None:
+        """
+        The `run_validation` function performs cross-validation and optionally removes columns and plots the
+        model, and then prints the mean error and the best combination of removed columns.
+        
+        :param number_of_column_to_remove: The parameter "number_of_column_to_remove" is an optional
+        parameter that specifies the number of columns to remove during cross-validation. If the value is 0,
+        the method will perform cross-validation without removing any columns. If the value is greater than
+        0, the method will perform cross-validation by removing, defaults to 0 (optional)
+        :param plot_model: A boolean flag indicating whether or not to plot the model. If set to True, the
+        model will be plotted; if set to False, the model will not be plotted, defaults to False (optional)
+        :return: None
+        """
+        if  number_of_column_to_remove == 0 :
+            self._cross_validation_with_all_columns()
+        else: 
+            self._cross_validation_removing_colums(number_of_column_to_remove)
+
+        if  plot_model:
+            self.plot_model()
+        
+        print(f"Calculating mean of error for {self.used_model_name} : {self.errors} column remove {self.column_removed}")
+
         return None
 
     def plot_model(self) -> None:
@@ -207,7 +235,7 @@ class Regression_Model_Tester:
         return None
 
 
-def elastic_net(X_train, Y_train, plot, color, alpha, l1_ratio) -> np.array:
+def elastic_net(X_train, Y_train, plot, color, alpha=0.09775999999999777, l1_ratio= 0.89, number_of_columns_to_remove = 0, plot_model=False) -> np.array:
     """
     The function ElasticNet performs Elastic Net regression on the given training data and returns the
     errors of the model.
@@ -228,38 +256,58 @@ def elastic_net(X_train, Y_train, plot, color, alpha, l1_ratio) -> np.array:
     elastic_net = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, max_iter=10000)
 
     elastic_net_model = Regression_Model_Tester(
-        X_train, Y_train, elastic_net, "Elastic Net", plot, color, True
+        X_train, 
+        Y_train, 
+        elastic_net, 
+        "Elastic Net", 
+        plot, 
+        color
     )
 
-    elastic_net_model.run_validation()
+    elastic_net_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
 
     return elastic_net_model.errors
 
 
-def polynomial_model(X_train, Y_train, plot, color) -> None:
+def polynomial_model(X_train, Y_train, plot, color, degree=2, number_of_columns_to_remove = 0, plot_model=False) -> None:
     """
-    The `polynomial_model` function creates a polynomial regression model by transforming the input data
-    into a polynomial form and then fitting the model on the transformed data.
-    :param X_train: The X_train parameter represents the input data for the model. It could be a matrix or
-    an array containing the features or independent variables used for prediction
-    :param Y_train: The Y_train parameter represents the target variable or the dependent variable in a
-    machine learning model. It is the variable that we are trying to predict or estimate based on the input
-    variables X
+    The function `polynomial_model` fits a polynomial regression model of a specified degree to the
+    given training data and evaluates its performance using a regression model tester.
+    
+    :param X_train: The training data for the independent variable(s) (features)
+    :param Y_train: The parameter Y_train represents the target variable or the dependent variable in
+    your dataset. It is the variable that you are trying to predict or model using the independent
+    variables (X_train)
+    :param plot: The "plot" parameter is a boolean value that determines whether or not to plot the
+    regression line and data points. If set to True, the regression line and data points will be
+    plotted. If set to False, no plot will be generated
+    :param color: The "color" parameter is used to specify the color of the plot in the polynomial_model
+    function. It can be any valid color value, such as "red", "blue", "green", etc
+    :param degree: The degree parameter determines the degree of the polynomial features to be used in
+    the polynomial regression model. It specifies the maximum power of the independent variable(s) in
+    the polynomial equation. For example, if degree=2, the polynomial regression model will include
+    features with powers 0, 1, and, defaults to 2 (optional)
     :return: None.
     """
 
-    polynomial_features = PolynomialFeatures(degree=3, include_bias=True)
+    polynomial_features = PolynomialFeatures(degree=degree, include_bias=True)
+    
     x_poly = polynomial_features.fit_transform(X_train)
 
     polynomial_regression_model = Regression_Model_Tester(
-        x_poly, Y_train, LinearRegression(), "Polynomial Regression", plot, color
+        x_poly, 
+        Y_train, 
+        LinearRegression(), 
+        "Polynomial Regression", 
+        plot, 
+        color
     )
-    polynomial_regression_model.run_validation()
+    polynomial_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
 
     return None
 
 
-def ridge_model(X_train, Y_train, plot, color, alpha) -> np.array:
+def ridge_model(X_train, Y_train, plot, color, alpha=2.08710000000000001, number_of_columns_to_remove = 0, plot_model=False) -> np.array:
     """
     The function `ridge_model` performs ridge regression on the given training data and prints the
     validation results.
@@ -278,15 +326,14 @@ def ridge_model(X_train, Y_train, plot, color, alpha) -> np.array:
         Ridge(alpha=alpha, max_iter=10000),
         "Ridge Regression",
         plot,
-        color,
-        True
+        color
     )
-    ridge_regression_model.run_validation()
+    ridge_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
 
     return ridge_regression_model.errors
 
 
-def lasso_model(X_train, Y_train, plot, color, alpha) -> np.array:
+def lasso_model(X_train, Y_train, plot, color, alpha=0.08710000000000001, number_of_columns_to_remove = 0, plot_model=False) -> np.array:
     """
     The function `lasso_model` trains and tests a Lasso regression model using the provided training
     data.
@@ -305,15 +352,14 @@ def lasso_model(X_train, Y_train, plot, color, alpha) -> np.array:
         Lasso(alpha=alpha, max_iter=10000),
         "Lasso Regression",
         plot,
-        color,
-        True , 
+        color
     )
-    lasso_regression_model.run_validation()
+    lasso_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
 
     return lasso_regression_model.errors
 
 
-def linear_model(X_train, Y_train, plot, color) -> None:
+def linear_model(X_train, Y_train, plot, color, number_of_columns_to_remove = 0, plot_model=False) -> None:
     """
     The function `linear_model` trains and tests a linear regression model using the given training
     data.
@@ -328,9 +374,14 @@ def linear_model(X_train, Y_train, plot, color) -> None:
     """
 
     linear_regression_model = Regression_Model_Tester(
-        X_train, Y_train, LinearRegression(), "Linear Regression", plot, color, True
+        X_train, 
+        Y_train, 
+        LinearRegression(), 
+        "Linear Regression", 
+        plot, 
+        color
     )
-    linear_regression_model.run_validation()
+    linear_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
 
     return None
 
@@ -340,15 +391,6 @@ def main():
     The main function loads training data and calls three different models: linear_model, ridge_model,
     and lasso_model.
     """
-    smallest_error = sys.maxsize
-    best_ratio = 0
-    best_alpha = 0
-
-    ridge_smallest_error = sys.maxsize
-    ridge_best_alpha = 0
-
-    lasso_models_smallest_error = sys.maxsize
-    lasso_models_best_alpha = 0
 
     plot = PlotManager()
 
@@ -363,15 +405,35 @@ def main():
     x_train_set = np.load("input_files/1_exercise/X_train_regression1.npy")
     y_train_set = np.load("input_files/1_exercise/y_train_regression1.npy")
 
-    linear_model(x_train_set, y_train_set, plot, "blue")
+    linear_model(X_train=x_train_set,
+                 Y_train=y_train_set,
+                 plot= plot,
+                 color="blue")
 
-    polynomial_model(x_train_set, y_train_set, plot, "cyan")
+    polynomial_model(X_train=x_train_set, 
+                     Y_train=y_train_set,
+                     plot=plot,
+                     color="cyan",
+                     degree=2)
 
-    ridge_model(x_train_set, y_train_set, plot, "green", ridge_alpha)
+    ridge_model(X_train=x_train_set,
+                Y_train=y_train_set,
+                plot=plot,
+                color="green",
+                alpha=ridge_alpha)
 
-    lasso_model(x_train_set, y_train_set, plot, "red", lasso_alpha)
+    lasso_model(X_train=x_train_set, 
+                Y_train=y_train_set,
+                plot=plot,
+                color="red",
+                alpha=lasso_alpha)
         
-    elastic_net(x_train_set, y_train_set, plot, "purple", elastic_net_alpha, l_ratio)
+    elastic_net(X_train=x_train_set,
+                Y_train=y_train_set,
+                plot=plot,
+                color="purple", 
+                alpha=elastic_net_alpha,
+                l1_ratio=l_ratio)
 
     # plot.show()
     f.close()
