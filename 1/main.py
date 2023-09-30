@@ -55,9 +55,9 @@ class PlotManager:
         plt.plot(y_real, y_pred, "o", color=color, label=model_name)
 
         for i in range(len(y_real)):
-            #    plt.plot([y_real[i], y_real[i]], [y_real[i], y_pred[i]], color=color, linestyle='--')
+            plt.plot([y_real[i], y_real[i]], [y_real[i], y_pred[i]], color=color, linestyle='--')
             plt.text(y_real[i], y_pred[i], str(i), fontsize=10, color=color)
-
+        
     def show(self):
         """
         The function displays a legend on a matplotlib plot and shows the plot.
@@ -110,7 +110,8 @@ class Regression_Model_Tester:
         The function calculates the error of the model by taking the mean of the prediction error.
         :return: the mean of the `prediction_error` array.
         """
-
+        if len(self.prediction_error) == 0:
+            return sys.maxsize
         return np.mean(self.prediction_error)
 
     @errors.setter
@@ -132,6 +133,8 @@ class Regression_Model_Tester:
         :return: the mean squared error between the predicted values (y_pred) and the actual values
         (y_test).
         """
+        
+        
         x_train_set_cpy = np.delete(np.copy(X_set), i, axis=0)
         y_train_set_cpy = np.delete(np.copy(Y_set), i, axis=0)
 
@@ -143,10 +146,9 @@ class Regression_Model_Tester:
         # Test prediction with the part of the training set
         y_pred = self.used_model.predict(x_test)
 
-        self.y_pred.append(y_pred)
-        self.y_real.append(y_test)
+        y_pred, y_test
 
-        return(mean_squared_error(y_test, y_pred))
+        return(mean_squared_error(y_test, y_pred), y_pred, y_test)
 
 
     def _cross_validation_with_all_columns(self) -> None:                 
@@ -156,8 +158,11 @@ class Regression_Model_Tester:
         :return: None
         """
         for i in range(len(self.X)):
-            SE  = self._train_model(np.copy(self.X), np.copy(self.Y), i)
+            SE, y_pred, y_real = self._train_model(np.copy(self.X), np.copy(self.Y), i)
 
+            self.y_pred.append(y_pred)
+            self.y_real.append(y_real)
+            
             self.prediction_error.append(SE)
 
         return None
@@ -176,22 +181,34 @@ class Regression_Model_Tester:
         
         column_to_remove = []
         see_vector = []
+        y_pred_vector= []
+        y_real_vector  =[]
 
         for length in range (1, number_of_column_to_remove + 1): 
             for combo in itertools.combinations(range(10), length): 
                 column_to_remove.append(combo)
 
+        #print(f"number_of colums to remove {(number_of_column_to_remove)} column_to_remove {column_to_remove}")
+
         for i in column_to_remove:
             x_set = np.delete(np.copy(self.X), i, axis=1)
             
             for  j in range (len(x_set)):
-                see_vector.append(self._train_model(x_set, np.copy(self.Y), j))
-
+                model_results = self._train_model(x_set, np.copy(self.Y), j)
+                see_vector.append(model_results[0]) 
+                y_pred_vector.append(model_results[1])
+                y_real_vector.append(model_results[2])
+                
             if np.mean(see_vector) < self.errors or np.isnan(self.errors): 
                 self.column_removed = i
                 self.prediction_error = see_vector
-
-            sse_vector = []
+                self.y_pred = y_pred_vector
+                self.y_real = y_real_vector
+                
+            
+            see_vector = []
+            y_pred_vector = []
+            y_real_vector = []
 
         return None 
         
@@ -215,6 +232,7 @@ class Regression_Model_Tester:
             self._cross_validation_removing_colums(number_of_column_to_remove)
 
         if  plot_model:
+            print("teste")
             self.plot_model()
         
         print(f"Calculating mean of error for {self.used_model_name} : {self.errors} column remove {self.column_removed}")
@@ -408,7 +426,9 @@ def main():
     linear_model(X_train=x_train_set,
                  Y_train=y_train_set,
                  plot= plot,
-                 color="blue")
+                 color="blue", 
+                 number_of_columns_to_remove=7,
+                 plot_model=True)
 
     polynomial_model(X_train=x_train_set, 
                      Y_train=y_train_set,
@@ -435,7 +455,7 @@ def main():
                 alpha=elastic_net_alpha,
                 l1_ratio=l_ratio)
 
-    # plot.show()
+    plot.show()
     f.close()
 
 
