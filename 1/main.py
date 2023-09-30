@@ -16,9 +16,6 @@ from sklearn.linear_model import (
     ElasticNet,
 )
 
-import time
-
-
 # The `PlotManager` class provides methods to initialize a plot, plot regression models, and display
 # the plot with a legend.
 class PlotManager:
@@ -56,7 +53,7 @@ class PlotManager:
 
         for i in range(len(y_real)):
             plt.plot([y_real[i], y_real[i]], [y_real[i], y_pred[i]], color=color, linestyle='--')
-            plt.text(y_real[i], y_pred[i], str(i), fontsize=10, color=color)
+            plt.text(y_real[i], y_pred[i], str(i), fontsize=10, color='red')
         
     def show(self):
         """
@@ -65,11 +62,10 @@ class PlotManager:
         plt.legend(loc="upper left")
         plt.show()
 
-
 # The `Regression_Model_Tester` class is used to test a regression model by performing
 # cross-validation and calculating the mean error of the model.
 class Regression_Model_Tester:
-    def __init__(self, X, Y, used_model, used_model_name, plot, color):
+    def __init__(self, X, Y, used_model, used_model_name, plot, color, parameters = None):
         """
         The above function is a constructor that initializes the attributes of an object, including the
         input data, the used model, and the model name, as well as empty lists for predicted values, real
@@ -87,6 +83,7 @@ class Regression_Model_Tester:
         """
         self.X = X
         self.Y = Y
+        
         self.used_model = used_model
         self.used_model_name = used_model_name
 
@@ -96,10 +93,10 @@ class Regression_Model_Tester:
         self.plot = plot
         self.color = color
         
+        self.parameters = parameters
+        
         self.column_removed = []
-
-
-
+        
     @property 
     def best_error_removing_column(self): 
         return self._previous_best_error, self._previous_best_combination
@@ -213,7 +210,7 @@ class Regression_Model_Tester:
         return None 
         
 
-    def run_validation(self, number_of_column_to_remove = 0, plot_model =  False) -> None:
+    def run_validation(self, number_of_column_to_remove = 0) -> np.ndarray:
         """
         The `run_validation` function performs cross-validation and optionally removes columns and plots the
         model, and then prints the mean error and the best combination of removed columns.
@@ -230,15 +227,11 @@ class Regression_Model_Tester:
             self._cross_validation_with_all_columns()
         else: 
             self._cross_validation_removing_colums(number_of_column_to_remove)
-
-        if  plot_model:
-            print("teste")
-            self.plot_model()
         
-        print(f"Calculating mean of error for {self.used_model_name} : {self.errors} column remove {self.column_removed}")
 
-        return None
-
+        
+        return self.errors
+        
     def plot_model(self) -> None:
         """
         The function `plot_model` plots the predicted values against the real values.
@@ -251,9 +244,11 @@ class Regression_Model_Tester:
             color=self.color,
         )
         return None
+    
+    def model_logger(self): 
+        print(f"Current Model: {self.used_model_name} current special parameters : {self.parameters}  current_error : {self.errors} current columns removed : {self.column_removed}")
 
-
-def elastic_net(X_train, Y_train, plot, color, alpha=0.09775999999999777, l1_ratio= 0.89, number_of_columns_to_remove = 0, plot_model=False) -> np.array:
+def elastic_net(X_train, Y_train, plot, color, alphas=[0.09775999999999777], l1_ratios= [0.89], number_of_columns_to_remove = 0, plot_model=False) -> None:
     """
     The function ElasticNet performs Elastic Net regression on the given training data and returns the
     errors of the model.
@@ -271,21 +266,39 @@ def elastic_net(X_train, Y_train, plot, color, alpha=0.09775999999999777, l1_rat
     balance between L1 and L2 regularization
     :return: the errors from the Elastic Net model.
     """
-    elastic_net = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, max_iter=10000)
+    
+    best_elastic_model = None
+    
+    for alpha in alphas: 
+        for l1_ratio in l1_ratios:
+            parameters = {"alpha": alpha, "l1_ratio": l1_ratio}
+            
+            elastic_net = ElasticNet(alpha=alpha, l1_ratio=l1_ratio, max_iter=10000)
 
-    elastic_net_model = Regression_Model_Tester(
-        X_train, 
-        Y_train, 
-        elastic_net, 
-        "Elastic Net", 
-        plot, 
-        color
-    )
+            elastic_net_model = Regression_Model_Tester(
+                X_train, 
+                Y_train, 
+                elastic_net, 
+                "Elastic Net", 
+                plot, 
+                color, 
+                parameters
+            )
 
-    elastic_net_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
+            if best_elastic_model is None:
+                best_elastic_model = elastic_net_model
 
-    return elastic_net_model.errors
+            current_sse = elastic_net_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove)
+            
+            if (current_sse < best_elastic_model.errors): 
+                best_elastic_model = elastic_net_model
+    
+    best_elastic_model.model_logger()
+    
+    if plot_model is True:
+        best_elastic_model.plot_model()
 
+    return None
 
 def polynomial_model(X_train, Y_train, plot, color, degree=2, number_of_columns_to_remove = 0, plot_model=False) -> None:
     """
@@ -320,12 +333,16 @@ def polynomial_model(X_train, Y_train, plot, color, degree=2, number_of_columns_
         plot, 
         color
     )
-    polynomial_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
+    polynomial_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove)
+    
+    polynomial_regression_model.model_logger()
+        
+    if plot_model is True: 
+        polynomial_regression_model.plot_model()
 
     return None
 
-
-def ridge_model(X_train, Y_train, plot, color, alpha=2.08710000000000001, number_of_columns_to_remove = 0, plot_model=False) -> np.array:
+def ridge_model(X_train, Y_train, plot, color, alphas=[2.08710000000000001], number_of_columns_to_remove = 0, plot_model=False) -> None:
     """
     The function `ridge_model` performs ridge regression on the given training data and prints the
     validation results.
@@ -338,20 +355,40 @@ def ridge_model(X_train, Y_train, plot, color, alpha=2.08710000000000001, number
     independent variables (X_train)
     :return: None.
     """
-    ridge_regression_model = Regression_Model_Tester(
-        X_train,
-        Y_train,
-        Ridge(alpha=alpha, max_iter=10000),
-        "Ridge Regression",
-        plot,
-        color
-    )
-    ridge_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
+    
+    best_ridge_model = None
+    
+    for alpha in alphas:
+    
+        parameters = {"alpha": alpha}
+    
+        ridge_regression_model = Regression_Model_Tester(
+            X_train,
+            Y_train,
+            Ridge(alpha=alpha, max_iter=10000),
+            "Ridge Regression",
+            plot,
+            color, 
+            parameters
+        )
+        
+        if best_ridge_model is None:
+            best_ridge_model = ridge_regression_model
+        
+        current_ridge_model_error = ridge_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove)
 
-    return ridge_regression_model.errors
+        if (current_ridge_model_error < best_ridge_model.errors): 
+            best_ridge_model = ridge_regression_model
+            
+    if (plot_model is True): 
+        best_ridge_model.plot_model()
 
 
-def lasso_model(X_train, Y_train, plot, color, alpha=0.08710000000000001, number_of_columns_to_remove = 0, plot_model=False) -> np.array:
+    best_ridge_model.model_logger()
+
+    return None
+
+def lasso_model(X_train, Y_train, plot, color, alphas=[0.08710000000000001], number_of_columns_to_remove = 0, plot_model=False) -> None:
     """
     The function `lasso_model` trains and tests a Lasso regression model using the provided training
     data.
@@ -364,18 +401,37 @@ def lasso_model(X_train, Y_train, plot, color, alpha=0.08710000000000001, number
     variables (X_train)
     :return: None.
     """
-    lasso_regression_model = Regression_Model_Tester(
-        X_train,
-        Y_train,
-        Lasso(alpha=alpha, max_iter=10000),
-        "Lasso Regression",
-        plot,
-        color
-    )
-    lasso_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
+    
+    best_lasso_model = None
+    
+    for alpha in alphas:
+        
+        parameters = {"alpha": alpha}
+    
+        lasso_regression_model = Regression_Model_Tester(
+            X_train,
+            Y_train,
+            Lasso(alpha=alpha, max_iter=10000),
+            "Lasso Regression",
+            plot,
+            color, 
+            parameters
+        )
+        
+        if best_lasso_model is None:
+            best_lasso_model = lasso_regression_model
+        
+        current_lasso_model_error = lasso_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove)
 
-    return lasso_regression_model.errors
+        if (current_lasso_model_error < best_lasso_model.errors): 
+            best_lasso_model = lasso_regression_model
+            
+    if (plot_model is True): 
+        best_lasso_model.plot_model()
+            
+    best_lasso_model.model_logger()
 
+    return None
 
 def linear_model(X_train, Y_train, plot, color, number_of_columns_to_remove = 0, plot_model=False) -> None:
     """
@@ -399,10 +455,14 @@ def linear_model(X_train, Y_train, plot, color, number_of_columns_to_remove = 0,
         plot, 
         color
     )
-    linear_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove, plot_model=plot_model)
+    linear_regression_model.run_validation(number_of_column_to_remove=number_of_columns_to_remove)
+
+    linear_regression_model.model_logger()
+
+    if (plot_model is True):
+        linear_regression_model.plot_model()
 
     return None
-
 
 def main():
     """
@@ -412,52 +472,54 @@ def main():
 
     plot = PlotManager()
 
-    l_ratio = 0.89
-    elastic_net_alpha = 0.09775999999999777 
-    ridge_alpha = 2.08710000000000001    
-    lasso_alpha = 0.08710000000000001
 
+    ridge_alpha = np.arange(2.0, 3.1, 0.1).tolist()
+    l_ratio = [0.89]
+    elastic_net_alpha = [0.09775999999999777] 
+    #ridge_alpha = [2.08710000000000001]    
+    lasso_alpha = [0.08710000000000001]
+    
     f = open("errors.txt", "w")
     f.write("Errors for regression models:\n")
 
     x_train_set = np.load("input_files/1_exercise/X_train_regression1.npy")
     y_train_set = np.load("input_files/1_exercise/y_train_regression1.npy")
 
-    linear_model(X_train=x_train_set,
-                 Y_train=y_train_set,
-                 plot= plot,
-                 color="blue", 
-                 number_of_columns_to_remove=7,
-                 plot_model=True)
+    #linear_model(X_train=x_train_set,
+    #             Y_train=y_train_set,
+    #             plot= plot,
+    #             color="blue", 
+    #             number_of_columns_to_remove=0,
+#                 plot_model=True)
 
-    polynomial_model(X_train=x_train_set, 
-                     Y_train=y_train_set,
-                     plot=plot,
-                     color="cyan",
-                     degree=2)
+    #polynomial_model(X_train=x_train_set, 
+    #                 Y_train=y_train_set,
+    #                 plot=plot,
+    #                 color="cyan",
+    #                 degree=2)
 
     ridge_model(X_train=x_train_set,
                 Y_train=y_train_set,
                 plot=plot,
                 color="green",
-                alpha=ridge_alpha)
+                alphas=ridge_alpha, 
+                number_of_columns_to_remove = 9, plot_model=True)
 
-    lasso_model(X_train=x_train_set, 
-                Y_train=y_train_set,
-                plot=plot,
-                color="red",
-                alpha=lasso_alpha)
+    #lasso_model(X_train=x_train_set, 
+    #            Y_train=y_train_set,
+    #            plot=plot,
+    #            color="red",
+    #            alphas=lasso_alpha)
         
-    elastic_net(X_train=x_train_set,
-                Y_train=y_train_set,
-                plot=plot,
-                color="purple", 
-                alpha=elastic_net_alpha,
-                l1_ratio=l_ratio)
+    #elastic_net(X_train=x_train_set,
+    #            Y_train=y_train_set,
+    #            plot=plot,
+    #            color="purple", 
+    #            alphas=elastic_net_alpha,
+    #            l1_ratios=l_ratio)
 
     plot.show()
     f.close()
-
 
 if __name__ == "__main__":
     main()
