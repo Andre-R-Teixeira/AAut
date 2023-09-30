@@ -485,12 +485,12 @@ def main():
     x_train_set = np.load("input_files/1_exercise/X_train_regression1.npy")
     y_train_set = np.load("input_files/1_exercise/y_train_regression1.npy")
 
-    #linear_model(X_train=x_train_set,
-    #             Y_train=y_train_set,
-    #             plot= plot,
-    #             color="blue", 
-    #             number_of_columns_to_remove=0,
-#                 plot_model=True)
+    linear_model(X_train=x_train_set,
+                 Y_train=y_train_set,
+                 plot= plot,
+                 color="blue", 
+                 number_of_columns_to_remove=8,
+                 plot_model=True)
 
     #polynomial_model(X_train=x_train_set, 
     #                 Y_train=y_train_set,
@@ -498,12 +498,12 @@ def main():
     #                 color="cyan",
     #                 degree=2)
 
-    ridge_model(X_train=x_train_set,
-                Y_train=y_train_set,
-                plot=plot,
-                color="green",
-                alphas=ridge_alpha, 
-                number_of_columns_to_remove = 9, plot_model=True)
+    #ridge_model(X_train=x_train_set,
+    #            Y_train=y_train_set,
+    #            plot=plot,
+    #            color="green",
+    #            alphas=ridge_alpha, 
+    #            number_of_columns_to_remove = 9, plot_model=True)
 
     #lasso_model(X_train=x_train_set, 
     #            Y_train=y_train_set,
