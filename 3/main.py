@@ -6,23 +6,26 @@
 #)
 
 import numpy as np
+
 import matplotlib.pyplot as plt
 from matplotlib import pyplot
+
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras.utils import to_categorical
+from sklearn.utils import class_weight
+from keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras import layers
+
+
+from imblearn.over_sampling import SMOTE
+
 from sklearn.model_selection import train_test_split
 from sklearn.svm import SVC
 from sklearn.model_selection import GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn import metrics
-from keras_tuner import RandomSearch, Hyperband
-import tensorflow_addons as tfa
-from sklearn.utils import class_weight
-from keras.preprocessing.image import ImageDataGenerator
-from tensorflow.keras import layers
-import keras_tuner as kt
-from imblearn.over_sampling import SMOTE
+
 
 
 # Assuming NEVU is class 0 and MELANOMA is class 1
@@ -87,7 +90,8 @@ class CNN:
         print(f"9")
         _model.compile(tf.keras.optimizers.Adam(0.0002),
                     loss=tf.keras.losses.BinaryCrossentropy(from_logits=True), # loss='categorical_crossentropy',
-                    metrics=['accuracy', tfa.metrics.F1Score(num_classes=2)])    
+                    
+                    )    
         
         self.model = _model
             
@@ -140,6 +144,9 @@ def rotate_images_to_balance(images, classification):
     np.save('image_rotated.npy', np.array(images_list))
 
 def main():
+    config = tf.compat.v1.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
+    sess = tf.compat.v1.Session(config=config)
+    
     #1gpu_devices = tf.config.experimental.list_physical_devices('GPU')
     #1for device in gpu_devices:
     #1    tf.config.experimental.set_memory_growth(device, True)
@@ -165,6 +172,12 @@ def main():
     y = np.concatenate((np.ones(melanoma_x_train_set.shape[0]), np.zeros(nevu_x_train_set.shape[0])), axis = 0)
     
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    
+    X_train = X_train.reshape(-1,28,28,3)
+    X_test = X_test.reshape(-1,28,28,3)
+    
+    y_train = to_categorical(y_train)
+    y_test  = to_categorical(y_test)
 
     print(f"Building CCN")
     cnn = CNN()
@@ -173,7 +186,7 @@ def main():
     callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True) # early stopping
     
     print(f"declaring history")
-    history = cnn.fit(X_train, y_train, epochs=200, validation_data=(X_test, y_test), callbacks=[callback])
+    history = cnn.model.fit(X_train, y_train, epochs=200, validation_data=(X_test, y_test), callbacks=[callback])
 
 
     print(f"predicting")
