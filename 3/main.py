@@ -1,35 +1,57 @@
-from time import sleep
-
 import numpy as np
 
-import matplotlib.pyplot as plt
-import tensorflow as tf
+#import tensorflow as tf
 
-from tensorflow.keras import datasets, layers, models
+import matplotlib.pyplot as plt
+
+import torch 
+import torchvision
+import torch.nn as nn
+import torch.nn.functional as F
+
+from scipy.ndimage import rotate
+
+#from tensorflow.keras import datasets, layers, models
 
 NEVU  = 0
 MELANOMA = 1
 
-def display_images(images): 
+
+def display_images(images, classification): 
     height, width,  channels = (28, 28, 3)
-    
-    for i, image in enumerate(images):
+    angles = list(range(0, 361, 45))
+
+    rotated_images_list = []
+    npy_images_list = []
+    classification_array = []
+
+    for i,image in enumerate(images):
         image =  images[i].reshape(height, width, channels)
-        fig, ax = plt.subplots()
-        ax.clear()
-        ax.imshow(image)
-        ax.axis('off')
-        plt.show()        
-        plt.close('all')
+
+        for angle in angles: 
+            rotated_images_list.append(rotate(image, angle, reshape=False))
+            classification_array.append(classification[i])
+
+    for i, image in enumerate(rotated_images_list):
+        npy_images_list.append(image.reshape(-1)) 
+
+    np.save('image_classification.npy', np.array(classification_array))
+    np.save('image_rotated.npy', np.array(npy_images_list))
+
+
 
 def main(): 
     x_train_set = np.load("input_files/Xtrain_Classification1.npy")
-    height, width,  channels = (28, 28, 3)
-    
-    print(f"x_train_set.shape {np.shape(x_train_set)}")
     y_train_set = np.load("input_files/ytrain_Classification1.npy")
     
-    display_images(x_train_set)
+    print(f"x_train_set.shape {np.shape(x_train_set)}")
+
+    display_images(x_train_set, y_train_set)
+
+    classi = np.load('image_classification.npy')
+    image = np.load('image_rotated')
     
+    print(f"classi shape : {np.shape(classi)}  image shape : {np.shape(image)}")
+
 if __name__ == '__main__': 
     main()
