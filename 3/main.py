@@ -29,7 +29,7 @@ from sklearn import metrics
 
 
 # Assuming NEVU is class 0 and MELANOMA is class 1
-NEVU = 0
+NEVO = 0
 MELANOMA = 1
 
 
@@ -144,61 +144,65 @@ def rotate_images_to_balance(images, classification):
     np.save('image_rotated.npy', np.array(images_list))
 
 def main():
-    config = tf.compat.v1.ConfigProto(device_count={'CPU': 1, 'GPU': 0})
-    sess = tf.compat.v1.Session(config=config)
-    
-    #1gpu_devices = tf.config.experimental.list_physical_devices('GPU')
-    #1for device in gpu_devices:
-    #1    tf.config.experimental.set_memory_growth(device, True)
+    batch_size = 256
     
     x_train_set = np.load("image_rotated.npy")
     y_train_set = np.load("image_classification.npy")
-    
+
     ## Separate the data into nevus and melanomas    
     melanoma_x_train_set = x_train_set[y_train_set == MELANOMA]
     melanoma_y_train_set = np.ones(np.shape(melanoma_x_train_set)[0])
-    
-    nevu_x_train_set = x_train_set[y_train_set == NEVU]
-    nevu_y_train_set = np.zeros(np.shape(nevu_x_train_set)[0]) 
-    
+
+    nevo_x_train_set = x_train_set[y_train_set == NEVO]
+    nevo_y_train_set = np.zeros(np.shape(nevo_x_train_set)[0]) 
+
     np.save('melanoma_x_train_set.npy', melanoma_x_train_set)
     np.save('melanoma_y_train_set.npy', melanoma_y_train_set)
-    
-    np.save('nevu_x_train_set.npy', nevu_x_train_set)
-    np.save('nevu_y_train_set.npy', nevu_y_train_set)
-    
+    np.save('nevo_x_train_set.npy', nevo_x_train_set)
+    np.save('nevo_y_train_set.npy', nevo_y_train_set)
+
     ## combine and shuffle data 
-    X  = np.concatenate((melanoma_x_train_set, nevu_x_train_set), axis = 0)
-    y = np.concatenate((np.ones(melanoma_x_train_set.shape[0]), np.zeros(nevu_x_train_set.shape[0])), axis = 0)
-    
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
+    X  = np.concatenate((melanoma_x_train_set, nevo_x_train_set), axis = 0)
+    y = np.concatenate((np.ones(melanoma_x_train_set.shape[0]), np.zeros(nevo_x_train_set.shape[0])), axis = 0)
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)   
+
     X_train = X_train.reshape(-1,28,28,3)
     X_test = X_test.reshape(-1,28,28,3)
-    
+
     y_train = to_categorical(y_train)
     y_test  = to_categorical(y_test)
+    
+    
+ 
+
+    train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
+    train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
+    
+    val_dataset =  tf.data.Dataset.from_tensor_slices((X_test, y_test))
+    val_dataset = val_dataset.shuffle(buffer_size=1024).batch(batch_size)
+    
+    train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
     print(f"Building CCN")
     cnn = CNN()
 
     print(f"declaring callback ")
     callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True) # early stopping
-    
-    print(f"declaring history")
-    history = cnn.model.fit(X_train, y_train, epochs=200, validation_data=(X_test, y_test), callbacks=[callback])
 
+
+    print(f"declaring history")
+    history = cnn.model.fit(X_train, y_train, epochs = 200, validation_data =train_dataset, callbacks=[callback])
 
     print(f"predicting")
     predict = np.argmax(cnn.model.predict(X_test), axis=-1)
-    
-    
+
     print(f"calculating f1 score")
     results2 = metrics.f1_score(np.argmax((y_test),  axis = -1),  predict)
-    
-    
+
     print('F1-Score', ':',results2)
 
+    cnn.model.save('model.keras')
 
 if __name__ == '__main__':
     main()
