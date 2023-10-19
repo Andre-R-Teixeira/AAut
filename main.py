@@ -59,12 +59,11 @@ def rotation(images,classification,indices_to_rotate,angles):
     np.save('image_rotated.npy', np.array(images_list))
 
 def adjust_brightness_contrast(images, classification,index,alpha, beta):
-
     adjusted_img_list=[]
     adjusted_img = []
     classification_array=[]
     height, width,  channels = (28, 28, 3)
-    
+
     for i in index:
         image = images[i]
         image =  images[i].reshape(height, width, channels)
@@ -72,34 +71,28 @@ def adjust_brightness_contrast(images, classification,index,alpha, beta):
         aux=cv2.convertScaleAbs(image, alpha=alpha, beta=beta)
         adjusted_img_list.append(aux)
         classification_array.append(classification[i])
-       
 
     adjusted_img = np.array(adjusted_img_list)
     new_labels = np.array(classification)
 
-   
     images_list = np.vstack((images, adjusted_img.reshape(-1, images.shape[1])))
     classi = np.concatenate((classification, new_labels))
-
-
 
     np.save('image_classification.npy', np.array(classi))
     np.save('image_bright.npy', np.array(images_list))
 
-    
-
 def main():
-    x_train_set = np.load("input_files/Xtrain_Classification1.npy")
-    y_train_set = np.load("input_files/ytrain_Classification1.npy")
-    
+    x_train_set = np.load("Xtrain_Classification1.npy")
+    y_train_set = np.load("ytrain_Classification1.npy")
+
     print(f"x_train_set.shape {np.shape(x_train_set)}")
-    
+
     # Rotate images to balance the dataset
     rotate_images_to_balance(x_train_set, y_train_set)
 
     clas = np.load('image_classification.npy')
     image = np.load('image_rotated.npy')
-    
+
     print(f"classi shape : {np.shape(clas)}  image shape : {np.shape(image)}")
 
     num_nevu_images = np.sum(clas == NEVU)
@@ -122,33 +115,23 @@ def main():
 
     print(f"nevu : {num_nevu_images}  melanoma: {num_melanoma_images}\n\n")
 
-    ids = range(len(class_t))
-    alpha = 0.5
-    beta = -50
+    #ids = range(len(class_t))
+    #alpha = 0.5
+    #beta = -50
 
-    adjust_brightness_contrast(image_t,class_t,ids,alpha,beta)
+    #adjust_brightness_contrast(image_t,class_t,ids,alpha,beta)
 
 
-    class_all = np.load('image_classification.npy')
-    image_all = np.load('image_bright.npy')
+    #class_all = np.load('image_classification.npy')
+    #image_all = np.load('image_bright.npy')
 
-    print(f"classi shape : {np.shape(class_all)}  image shape : {np.shape(image_all)}")
+    #print(f"classi shape : {np.shape(class_all)}  image shape : {np.shape(image_all)}")
 
-    num_nevu_images = np.sum(class_all == NEVU)
-    num_melanoma_images = np.sum(class_all == MELANOMA)
+    #num_nevu_images = np.sum(class_all == NEVU)
+    #num_melanoma_images = np.sum(class_all == MELANOMA)
 
-    print(f"nevu : {num_nevu_images}  melanoma: {num_melanoma_images}")
-   
+    #print(f"nevu : {num_nevu_images}  melanoma: {num_melanoma_images}")
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-
-
-   
 
