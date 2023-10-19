@@ -29,7 +29,7 @@ from sklearn import metrics
 
 
 # Assuming NEVU is class 0 and MELANOMA is class 1
-NEVO = 0
+NEVU = 0
 MELANOMA = 1
 
 
@@ -95,65 +95,19 @@ class CNN:
         
         self.model = _model
             
-        
-
-def rotate_images_to_balance(images, classification):
-    num_nevu_images = np.sum(classification == NEVU)
-    num_melanoma_images = np.sum(classification == MELANOMA)
-
-    print(f"nevu : {num_nevu_images}  melanoma: {num_melanoma_images}")
-
-
-    height, width,  channels = (28, 28, 3)
-    angles = [45, 90, 180, 270, 25]
-
-    rotated_images_list = []
-    npy_images_list = []
-    classification_array = []
-
-    if num_nevu_images < num_melanoma_images:
-        class_to_rotate = NEVU
-    else:
-        class_to_rotate = MELANOMA
-
-    indices_to_rotate = np.where(classification == class_to_rotate)[0]
-
-    rotated_images = []
-    for idx in indices_to_rotate:
-        image = images[idx]
-        image =  images[idx].reshape(height, width, channels)
-
-        for ang in angles:
-            rotated_images_list.append(rotate(image, ang, reshape=False))
-            classification_array.append(classification[idx])
-
-    for idx, image in enumerate(rotated_images_list):
-        npy_images_list.append(image.reshape(-1)) 
-
-
-    rotated_images = np.array(npy_images_list)
-    new_labels = np.array(classification_array)
-
-    # Stack the rotated images with the original dataset
-    images_list = np.vstack((images, rotated_images))
-    classi = np.concatenate((classification, new_labels))
-
-
-
-    np.save('image_classification.npy', np.array(classi))
-    np.save('image_rotated.npy', np.array(images_list))
+    
 
 def main():
     batch_size = 256
     
-    x_train_set = np.load("image_rotated.npy")
+    x_train_set = np.load("image_colored.npy")
     y_train_set = np.load("image_classification.npy")
 
     ## Separate the data into nevus and melanomas    
     melanoma_x_train_set = x_train_set[y_train_set == MELANOMA]
     melanoma_y_train_set = np.ones(np.shape(melanoma_x_train_set)[0])
 
-    nevo_x_train_set = x_train_set[y_train_set == NEVO]
+    nevo_x_train_set = x_train_set[y_train_set == NEVU]
     nevo_y_train_set = np.zeros(np.shape(nevo_x_train_set)[0]) 
 
     np.save('melanoma_x_train_set.npy', melanoma_x_train_set)
