@@ -98,44 +98,45 @@ class CNN:
     
 
 def main():
+    np.random.seed(42)
+    tf.random.set_seed(42)
+    
     batch_size = 256
     
+    rotaded_classification = np.load('rotated_classification.npy')
+    rotated_images = np.load('rotated_images.npy')
+
+    ## create test set with only rotated images
+    _, X_test, _, Y_test =  train_test_split(rotated_images, rotaded_classification, test_size=0.2, random_state=42)
+
+
     x_train_set = np.load("image_colored.npy")
     y_train_set = np.load("image_classification.npy")
 
-    ## Separate the data into nevus and melanomas    
-    melanoma_x_train_set = x_train_set[y_train_set == MELANOMA]
-    melanoma_y_train_set = np.ones(np.shape(melanoma_x_train_set)[0])
 
-    nevo_x_train_set = x_train_set[y_train_set == NEVU]
-    nevo_y_train_set = np.zeros(np.shape(nevo_x_train_set)[0]) 
+    X_train, _, y_train, _ = train_test_split(x_train_set, y_train_set, test_size=0.2, random_state=42)   
 
-    np.save('melanoma_x_train_set.npy', melanoma_x_train_set)
-    np.save('melanoma_y_train_set.npy', melanoma_y_train_set)
-    np.save('nevo_x_train_set.npy', nevo_x_train_set)
-    np.save('nevo_y_train_set.npy', nevo_y_train_set)
-
-    ## combine and shuffle data 
-    X  = np.concatenate((melanoma_x_train_set, nevo_x_train_set), axis = 0)
-    y = np.concatenate((np.ones(melanoma_x_train_set.shape[0]), np.zeros(nevo_x_train_set.shape[0])), axis = 0)
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)   
+    masks = ~np.isin(x_train_set, X_test).all(axis=1)
+    
+    indices =  np.where(masks)[0]
+    print(f" masks :  {np.shape(masks)} indices { indices}")
+    
+    
+    X_train = np.delete(X_train, indices, axis = 0)
+    y_train = np.delete(y_train, indices, axis = 0)
 
     X_train = X_train.reshape(-1,28,28,3)
     X_test = X_test.reshape(-1,28,28,3)
 
     y_train = to_categorical(y_train)
-    y_test  = to_categorical(y_test)
-    
-    
- 
+    y_test  = to_categorical(Y_test)
 
     train_dataset = tf.data.Dataset.from_tensor_slices((X_train, y_train))
     train_dataset = train_dataset.shuffle(buffer_size=1024).batch(batch_size)
-    
+
     val_dataset =  tf.data.Dataset.from_tensor_slices((X_test, y_test))
     val_dataset = val_dataset.shuffle(buffer_size=1024).batch(batch_size)
-    
+
     train_dataset.prefetch(buffer_size=tf.data.experimental.AUTOTUNE)
 
     print(f"Building CCN")
@@ -146,7 +147,7 @@ def main():
 
 
     print(f"declaring history")
-    history = cnn.model.fit(X_train, y_train, epochs = 200, validation_data =train_dataset, callbacks=[callback])
+    history = cnn.model.fit(X_train, y_train, epochs = 500, validation_data =train_dataset, callbacks=[callback])
 
     print(f"predicting")
     predict = np.argmax(cnn.model.predict(X_test), axis=-1)
