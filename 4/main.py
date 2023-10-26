@@ -317,6 +317,7 @@ def main():
     blood_cell_cnn.save()
     
     blood_predict += 3;
+    blood_cell_y_test += 3;
     
     y_pred_total  = np.concatenate((dermoscopy_predict, blood_predict))
     y_test_total = np.concatenate((dermoscopy_y_test, blood_cell_y_test))
