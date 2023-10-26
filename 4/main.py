@@ -237,7 +237,7 @@ def main():
     data_manager =  DataManager(professor_x_train_set, professor_y_train_set)
     data_manager.balance_training_set()
     
-    data_manager.save_train_data("augmented_files/augmented_x_train.npy", "augmented_files/augmented_y_train.npy")
+    data_manager.save_train_data("augmented_x_train.npy", "augmented_y_train.npy")
     
     x_train  = data_manager.x_train
     x_test = data_manager.x_test
@@ -288,19 +288,30 @@ def main():
     dermoscopy_train = dermoscopy_train.shuffle(buffer_size=1024).batch(batch_size)
     
     callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True) # early stopping    
-    history = dermoscopy_cnn.model.fit(dermoscopy_x_train.reshape(-1, HEIGHT, WIDTH, CHANNELS), dermoscopy_y_train, epochs = 10, validation_data =dermoscopy_train, callbacks=[callback])
+    history = dermoscopy_cnn.model.fit(dermoscopy_x_train.reshape(-1, HEIGHT, WIDTH, CHANNELS), dermoscopy_y_train, epochs = 500, validation_data =dermoscopy_train, callbacks=[callback])
         
     blood_cell_train  = tf.data.Dataset.from_tensor_slices((blood_cell_x_train.reshape(-1, HEIGHT, WIDTH, CHANNELS), blood_cell_y_train))
     blood_cell_train = blood_cell_train.shuffle(buffer_size=1024).batch(batch_size)
     
     callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True) # early stopping    
-    history = blood_cell_cnn.model.fit(blood_cell_x_train.reshape(-1, HEIGHT, WIDTH, CHANNELS), blood_cell_y_train, epochs = 10, validation_data =blood_cell_train, callbacks=[callback])
+    history = blood_cell_cnn.model.fit(blood_cell_x_train.reshape(-1, HEIGHT, WIDTH, CHANNELS), blood_cell_y_train, epochs = 500, validation_data =blood_cell_train, callbacks=[callback])
     
     print(f"predictions")
     print(f"Decision tree arcuracy : {metrics.accuracy_score(y_test_classifier, y_pred)}")
     dermoscopy_predict = np.argmax(dermoscopy_cnn.model.predict(dermoscopy_x_test.reshape(-1, HEIGHT, WIDTH, CHANNELS)), axis=-1)
     blood_predit = np.argmax(blood_cell_cnn.model.predict(blood_cell_x_test.reshape(-1, HEIGHT, WIDTH, CHANNELS)), axis=-1)
     
+
+    # Assuming y_true contains the true labels for dermoscopy (0) and blood cell microscopy (1)
+    y_true = np.concatenate((np.zeros_like(dermoscopy_predict), np.ones_like(blood_predit)))
+
+    # Assuming y_pred contains the predicted labels for dermoscopy and blood cell microscopy
+    y_pred = np.concatenate((dermoscopy_predict, blood_predit))
+
+    # Compute F1 score
+    f1_score = metrics.f1_score(y_true, y_pred, average='weighted')
+
+    print(f'F1 Score: {f1_score}')
 
 
 #
