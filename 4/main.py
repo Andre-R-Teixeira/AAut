@@ -316,6 +316,19 @@ def main():
     dermoscopy_cnn.save()
     blood_cell_cnn.save()
     
+    blood_predict += 3;
+    
+    y_pred_total  = np.concatenate((dermoscopy_predict, blood_predict))
+    y_test_total = np.concatenate((dermoscopy_y_test, blood_cell_y_test))
+    
+    total_matrix =      confusion_matrix (y_pred_total, y_test_total)
+    total_balance_accuracy  = balanced_accuracy_score(y_test_total, y_pred_total)
+    
+    print(f"total_matrix {total_matrix}")
+    print(f"total_balance_accuracy {total_balance_accuracy}")
+    
+    
+    
 #    print(f"predicting")
 #    predict = np.argmax(cnn.model.predict(x_test), axis=-1)
 #
