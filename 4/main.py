@@ -181,6 +181,7 @@ class DataManager:
     
 class CNN:
     def __init__(self, name = "cnn"): 
+        self.name  = name
         
 
         _model = tf.keras.models.Sequential()
