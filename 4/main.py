@@ -239,56 +239,67 @@ def main():
     
     data_manager.save_train_data("augmented_files/augmented_x_train.npy", "augmented_files/augmented_y_train.npy")
     
-
-#    x_train  = data_manager.x_train
-#    x_test = data_manager.x_test
-#    
-#    y_train = data_manager.y_train
-#    y_test = data_manager.y_test
-#
-#    y_train_classifier =  np.where(y_train < 3, 0, 1)
-#    y_test_classifier =  np.where(y_test < 3, 0, 1)
-#
-#    print(f"shape  : {x_train.shape} {y_train.shape}")
-#    print(f"shape  : {x_test.shape} {y_test.shape}")
-#    
-#    clf = DecisionTree(min_samples_split = 2)
-#    clf.train(x_train, y_train_classifier)
-#    y_pred = clf.predict(x_test)
-#    
-#    print(f"y_pred {np.shape(y_pred)} ,y_test_classifier {np.shape(y_test_classifier)}")
-#
-#    print(f"Accuracy : {metrics.accuracy_score(y_test_classifier, y_pred)}")
-#    
-#    ## get training set images classified as dermoscopic and blood cell microscopy
-#    dermoscopy_x_train = x_train[np.where(y_train < 3)]  
-#    dermoscopy_y_train = y_train[np.where(y_train < 3)]
-#    
-#    blood_cell_x_train = x_train[np.where(y_train > 3)]
-#    blood_cell_y_train  = y_train[np.where(y_train > 3)]
-#    
-#    print(f"dermoscopy_images {np.shape(dermoscopy_x_train)} ,dermoscopy_classified {np.shape(dermoscopy_y_train)}")
-#    print(f"blood_cell_images {np.shape(blood_cell_x_train)} ,blood_cell_classified {np.shape(blood_cell_y_train)}")
-#
-#    
-#    
-#    dermoscopy_cnn = CNN()
-#    
-#    blood_cell_cnn = CNN()
-#    
-
-#    dermoscopy_train  = tf.data.Dataset.from_tensor_slices((dermoscopy_x_train, dermoscopy_y_train))
-#    dermoscopy_train = dermoscopy_train.shuffle(buffer_size=1024).batch(batch_size)
-#    
-#    callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True) # early stopping    
-#    history = dermoscopy_cnn.model.fit(x_train, y_train, epochs = 100, validation_data =dermoscopy_train, callbacks=[callback])
-#        
-#    blood_cell_train  = tf.data.Dataset.from_tensor_slices((blood_cell_x_train, blood_cell_y_train))
-#    blood_cell_train = blood_cell_train.shuffle(buffer_size=1024).batch(batch_size)
-#    
-#    callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True) # early stopping    
-#    history = blood_cell_cnn.model.fit(x_train, y_train, epochs = 100, validation_data =blood_cell_train, callbacks=[callback])
+    x_train  = data_manager.x_train
+    x_test = data_manager.x_test
     
+    y_train = data_manager.y_train
+    y_test = data_manager.y_test
+
+    y_train_classifier =  np.where(y_train < 3, 0, 1)
+    y_test_classifier =  np.where(y_test < 3, 0, 1)
+
+    print(f"trainig   : {x_train.shape} {y_train.shape}")
+    print(f"testing: {x_test.shape} {y_test.shape}")
+    
+    clf = DecisionTree(min_samples_split = 2)
+    clf.train(data_manager.x_train, y_train_classifier)
+    y_pred = clf.predict(x_test)
+    
+
+    
+    
+    ## get training set images classified as dermoscopic and blood cell microscopy
+    dermoscopy_x_train = x_train[np.where(y_train < 3)]  
+    dermoscopy_y_train = y_train[np.where(y_train < 3)]
+    dermoscopy_x_test = x_test[np.where(y_test < 3)]
+    dermoscopy_y_test = y_test[np.where(y_test < 3)]
+    
+    
+    blood_cell_x_train = x_train[np.where(y_train > 3)]
+    blood_cell_y_train  = y_train[np.where(y_train > 3)]
+    blood_cell_y_train = blood_cell_y_train - 3
+    blood_cell_x_test = x_test[np.where(y_test > 3)]
+    blood_cell_y_test = y_test[np.where(y_test > 3)]
+    blood_cell_y_test = blood_cell_y_test - 3
+    
+    
+    
+    print(f"dermoscopy_images {np.shape(dermoscopy_x_train)} ,dermoscopy_classified {np.shape(dermoscopy_y_train)}")
+    print(f"blood_cell_images {np.shape(blood_cell_x_train)} ,blood_cell_classified {np.shape(blood_cell_y_train)}")
+
+    
+    
+    dermoscopy_cnn = CNN()
+    
+    blood_cell_cnn = CNN()
+    
+
+    dermoscopy_train  = tf.data.Dataset.from_tensor_slices((dermoscopy_x_train.reshape(-1, HEIGHT, WIDTH, CHANNELS), dermoscopy_y_train))
+    dermoscopy_train = dermoscopy_train.shuffle(buffer_size=1024).batch(batch_size)
+    
+    callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True) # early stopping    
+    history = dermoscopy_cnn.model.fit(dermoscopy_x_train.reshape(-1, HEIGHT, WIDTH, CHANNELS), dermoscopy_y_train, epochs = 10, validation_data =dermoscopy_train, callbacks=[callback])
+        
+    blood_cell_train  = tf.data.Dataset.from_tensor_slices((blood_cell_x_train.reshape(-1, HEIGHT, WIDTH, CHANNELS), blood_cell_y_train))
+    blood_cell_train = blood_cell_train.shuffle(buffer_size=1024).batch(batch_size)
+    
+    callback = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=20, restore_best_weights=True) # early stopping    
+    history = blood_cell_cnn.model.fit(blood_cell_x_train.reshape(-1, HEIGHT, WIDTH, CHANNELS), blood_cell_y_train, epochs = 10, validation_data =blood_cell_train, callbacks=[callback])
+    
+    print(f"predictions")
+    print(f"Decision tree arcuracy : {metrics.accuracy_score(y_test_classifier, y_pred)}")
+    dermoscopy_predict = np.argmax(dermoscopy_cnn.model.predict(dermoscopy_x_test.reshape(-1, HEIGHT, WIDTH, CHANNELS)), axis=-1)
+    blood_predit = np.argmax(blood_cell_cnn.model.predict(blood_cell_x_test.reshape(-1, HEIGHT, WIDTH, CHANNELS)), axis=-1)
     
 
 
